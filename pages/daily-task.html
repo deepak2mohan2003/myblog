@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Task Tracker - MyBlog</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <a href="../index.html">MyBlog</a>
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="../index.html" class="nav-link">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="daily-task.html" class="nav-link active">Daily Tasks</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="ai-magic.html" class="nav-link">AI Magic</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="maths.html" class="nav-link">Maths & Reading</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="utility.html" class="nav-link">Utilities</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="games.html" class="nav-link">Games</a>
+                    </li>
+                </ul>
+                <button id="auth-btn" class="auth-button">Login</button>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Protected Content Section -->
+        <section id="protected-section" class="protected-section" style="display: none;">
+            <div class="protected-container">
+                <h1>📝 Daily Task Tracker</h1>
+                <p class="section-subtitle">Manage and track your daily activities and goals</p>
+
+                <div class="page-content">
+                    <h2>Task Tracker</h2>
+                    <p>Coming soon! This section will allow you to:</p>
+                    <ul>
+                        <li>Create new daily tasks</li>
+                        <li>Mark tasks as complete</li>
+                        <li>Track your productivity</li>
+                        <li>View task history</li>
+                        <li>Set reminders for important tasks</li>
+                    </ul>
+
+                    <div class="feature-preview">
+                        <h3>Planned Features:</h3>
+                        <ul>
+                            <li>✓ Task creation and management</li>
+                            <li>✓ Progress tracking with visual indicators</li>
+                            <li>✓ Category-based task organization</li>
+                            <li>✓ Due date management</li>
+                            <li>✓ Task prioritization</li>
+                            <li>✓ Daily statistics and insights</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Login Required Section -->
+        <section id="login-required" class="protected-section">
+            <div class="protected-container">
+                <h2>Login Required</h2>
+                <p>Please login to access the Daily Task Tracker.</p>
+                <button id="login-btn" class="btn-primary">Login with Google</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 MyBlog. All rights reserved.</p>
+    </footer>
+
+    <!-- AWS Cognito SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/aws-amplify@5.3.11/dist/aws-amplify.min.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/app.js"></script>
+
+    <!-- Page-specific script -->
+    <script>
+        // Handle page-specific authentication
+        function setupPageAuth() {
+            const protectedSection = document.getElementById('protected-section');
+            const loginRequired = document.getElementById('login-required');
+            const loginBtn = document.getElementById('login-btn');
+
+            function updatePageState() {
+                if (window.app && window.app.isUserAuthenticated()) {
+                    protectedSection.style.display = 'block';
+                    loginRequired.style.display = 'none';
+                } else {
+                    protectedSection.style.display = 'none';
+                    loginRequired.style.display = 'block';
+                }
+            }
+
+            // Initial state
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', updatePageState);
+            } else {
+                updatePageState();
+            }
+
+            // Update on auth state change
+            document.addEventListener('authStateChanged', updatePageState);
+
+            // Login button handler
+            if (loginBtn) {
+                loginBtn.addEventListener('click', () => {
+                    window.authManager.loginWithGoogle();
+                });
+            }
+        }
+
+        // Wait for app to initialize before setting up page auth
+        const checkApp = setInterval(() => {
+            if (window.app) {
+                clearInterval(checkApp);
+                setupPageAuth();
+            }
+        }, 100);
+    </script>
+
+    <style>
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+        }
+
+        .page-content {
+            background: var(--bg-white);
+            padding: 2rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+        }
+
+        .page-content h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .page-content ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .page-content li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .page-content li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .feature-preview {
+            background: var(--bg-light);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .feature-preview h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .feature-preview ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .feature-preview li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .feature-preview li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success-color);
+            font-weight: bold;
+        }
+    </style>
+</body>
+</html>

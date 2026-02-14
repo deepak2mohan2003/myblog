@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyBlog - Personal Blog & Web Apps</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <a href="index.html">MyBlog</a>
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="index.html" class="nav-link active">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="pages/daily-task.html" class="nav-link">Daily Tasks</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="pages/ai-magic.html" class="nav-link">AI Magic</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="pages/maths.html" class="nav-link">Maths & Reading</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="pages/utility.html" class="nav-link">Utilities</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="pages/games.html" class="nav-link">Games</a>
+                    </li>
+                </ul>
+                <button id="auth-btn" class="auth-button">Login</button>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Welcome Section (Not Authenticated) -->
+        <section id="welcome-section" class="welcome-section">
+            <div class="welcome-container">
+                <h1>Welcome to MyBlog</h1>
+                <p>A personal space for daily tasks, AI-powered tools, learning, and fun games.</p>
+                <div class="welcome-content">
+                    <div class="feature-card">
+                        <h3>📝 Daily Tasks</h3>
+                        <p>Track and manage your daily activities and goals.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>✨ AI Magic</h3>
+                        <p>Explore AI-powered tools and features.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>🧮 Learn</h3>
+                        <p>Maths problems and reading comprehension exercises.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>🎮 Games</h3>
+                        <p>Play interactive games and challenges.</p>
+                    </div>
+                </div>
+                <button id="login-btn" class="btn-primary">Login with Google</button>
+            </div>
+        </section>
+
+        <!-- Protected Section (Authenticated Users Only) -->
+        <section id="protected-section" class="protected-section" style="display: none;">
+            <div class="protected-container">
+                <h2>Welcome, <span id="user-name">User</span>!</h2>
+                <div class="user-info">
+                    <p>Email: <span id="user-email">-</span></p>
+                    <p id="user-status" class="status-badge">Authenticated ✓</p>
+                </div>
+                <div class="protected-content">
+                    <h3>Your Dashboard</h3>
+                    <p>You now have access to all features. Click on any section in the navigation menu to get started!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Authentication Error Section -->
+        <section id="error-section" class="error-section" style="display: none;">
+            <div class="error-container">
+                <h2>Authentication Error</h2>
+                <p id="error-message"></p>
+                <button id="retry-btn" class="btn-primary">Retry Login</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 MyBlog. All rights reserved.</p>
+    </footer>
+
+    <!-- AWS Cognito SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/aws-amplify@5.3.11/dist/aws-amplify.min.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

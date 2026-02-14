@@ -1,0 +1,117 @@
+version: 1
+
+# AWS Amplify Build Specification
+# This file configures how Amplify builds and deploys your static web app
+
+# Frontend build settings
+frontend:
+  phases:
+    # Install phase - Install dependencies if needed
+    install:
+      commands:
+        # For a static HTML/CSS/JS app, typically no install phase needed
+        # Uncomment below if you need to install any build tools
+        # - npm install
+
+    # Pre-build phase - Prepare artifacts
+    preBuild:
+      commands:
+        # Pre-build commands go here (optional)
+        # Example: Copy configuration files, validate structure, etc.
+        - echo "Validating project structure..."
+
+    # Build phase - Compile/prepare application
+    build:
+      commands:
+        # For static files, no build step required
+        # If using build tools (webpack, gulp, etc.), add commands here
+        # Example: npm run build
+        - echo "Building MyBlog application..."
+        - echo "Static files are ready for deployment"
+
+    # Post-build phase - Final preparations
+    postBuild:
+      commands:
+        - echo "Build completed successfully"
+
+  # Artifacts - Define what to deploy
+  artifacts:
+    # Base directory for build artifacts
+    baseDirectory: /
+    files:
+      # Include all files
+      - '**/*'
+    discard-paths: no
+    secondary-artifacts:
+      # Optional: Configure caching or additional artifact handling
+      {}
+
+  # Cache configuration
+  cache:
+    paths:
+      # Optional: Cache node_modules if using npm
+      # - 'node_modules/**/*'
+
+# Environmental variables
+env:
+  variables:
+    # AWS Region
+    AWS_REGION: us-east-1
+    # Build type
+    AMPLIFY_ENV: production
+
+# Custom rules for Amplify Hosting
+customRules:
+  # Single Page Application routing - routes all 404s to index.html for SPA support
+  - source: '</^[^.]+$|\.(?!js$|css$|gif$|jpg$|jpeg$|png$|txt$|xml$|svg$|webp$|woff$|woff2$|ttf$|eot$|otf$|ico$)/>'
+    target: /index.html
+    status: 200
+
+  # Redirect HTTP to HTTPS
+  - source: http
+    target: https
+    status: 301
+    condition: HostHeader.*
+
+  # Cache control headers for static assets
+  - source: '\.(?:js|css|gif|jpg|jpeg|png|txt|xml|svg|webp|woff|woff2|ttf|eot|otf|ico)$'
+    headers:
+      - key: Cache-Control
+        value: 'public, max-age=31536000, immutable'
+    status: 200
+
+  # Cache control for HTML files
+  - source: '\.html$'
+    headers:
+      - key: Cache-Control
+        value: 'public, max-age=0, must-revalidate'
+      - key: X-Content-Type-Options
+        value: 'nosniff'
+      - key: X-Frame-Options
+        value: 'SAMEORIGIN'
+      - key: X-XSS-Protection
+        value: '1; mode=block'
+    status: 200
+
+  # Security headers for all responses
+  - source: '.*'
+    headers:
+      - key: Strict-Transport-Security
+        value: 'max-age=31536000; includeSubDomains'
+      - key: X-Content-Type-Options
+        value: 'nosniff'
+      - key: X-Frame-Options
+        value: 'SAMEORIGIN'
+      - key: X-XSS-Protection
+        value: '1; mode=block'
+      - key: Referrer-Policy
+        value: 'strict-origin-when-cross-origin'
+
+# Deployment instructions
+# After configuring this file:
+# 1. Create a ZIP file of your project (excluding .git, node_modules, etc.)
+# 2. Go to AWS Amplify Console
+# 3. Click "New app" → "Host web app"
+# 4. Choose "Deploy without Git provider"
+# 5. Upload the ZIP file
+# 6. Amplify will automatically use this amplify.yml for build configuration
