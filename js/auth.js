@@ -2,11 +2,11 @@
  * Authentication Module
  *
  * Handles:
- * - Cognito authentication initialization
+ * - Email/Password authentication with Cognito
  * - Google OAuth login integration
  * - Token storage and retrieval
  * - Session management
- * - Logout functionality
+ * - User registration and password reset
  */
 
 class AuthManager {
@@ -27,6 +27,7 @@ class AuthManager {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('code')) {
                 await this.handleOAuthCallback();
+                return;
             }
 
             // Check for existing session/tokens
@@ -84,25 +85,8 @@ class AuthManager {
 
     /**
      * Exchange authorization code for tokens
-     * Uses AWS Amplify Auth to exchange code
      */
     async exchangeCodeForTokens(code) {
-        try {
-            // Use Amplify's signIn with OAuth code
-            // This is a simplified version - in production, you'd typically use Amplify's built-in OAuth handling
-            const response = await this.getTokensFromCode(code);
-            return response;
-        } catch (error) {
-            console.error('Error exchanging code for tokens:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Get tokens from authorization code
-     * Makes a call to Cognito token endpoint
-     */
-    async getTokensFromCode(code) {
         try {
             const tokenEndpoint = `https://${awsConfig.oauth.domain}/oauth2/token`;
 
@@ -140,6 +124,208 @@ class AuthManager {
     }
 
     /**
+     * Sign up with email and password
+     * @param {string} email - User email
+     * @param {string} password - User password
+     * @param {string} name - User full name
+     */
+    async signUpWithEmail(email, password, name = '') {
+        try {
+            const signUpParams = {
+                username: email,
+                password: password,
+                attributes: {
+                    email: email,
+                    name: name || email.split('@')[0]
+                }
+            };
+
+            const result = await Auth.signUp(signUpParams);
+
+            return {
+                success: true,
+                message: 'Sign up successful! Please check your email for verification code.',
+                userSub: result.userSub
+            };
+        } catch (error) {
+            console.error('Sign up error:', error);
+            return {
+                success: false,
+                message: this.getErrorMessage(error)
+            };
+        }
+    }
+
+    /**
+     * Confirm user account with verification code
+     * @param {string} email - User email
+     * @param {string} code - Verification code from email
+     */
+    async confirmSignUp(email, code) {
+        try {
+            await Auth.confirmSignUp(email, code);
+
+            return {
+                success: true,
+                message: 'Email verified! You can now log in.'
+            };
+        } catch (error) {
+            console.error('Confirm sign up error:', error);
+            return {
+                success: false,
+                message: this.getErrorMessage(error)
+            };
+        }
+    }
+
+    /**
+     * Sign in with email and password
+     * @param {string} email - User email
+     * @param {string} password - User password
+     */
+    async signInWithEmail(email, password) {
+        try {
+            const signInParams = {
+                username: email,
+                password: password
+            };
+
+            const user = await Auth.signIn(signInParams);
+
+            if (user.challengeName === 'NEW_PASSWORD_REQUIRED') {
+                return {
+                    success: false,
+                    message: 'New password required',
+                    challengeName: 'NEW_PASSWORD_REQUIRED',
+                    user: user
+                };
+            }
+
+            // Get tokens
+            const tokens = await this.getUserTokens(user);
+
+            if (tokens) {
+                this.tokens = tokens;
+                this.isAuthenticated = true;
+                this.user = this.extractUserFromToken(tokens.idToken);
+                this.storeTokens(tokens);
+                document.dispatchEvent(new Event('authStateChanged'));
+
+                return {
+                    success: true,
+                    message: 'Login successful!',
+                    user: this.user
+                };
+            }
+        } catch (error) {
+            console.error('Sign in error:', error);
+            return {
+                success: false,
+                message: this.getErrorMessage(error)
+            };
+        }
+    }
+
+    /**
+     * Complete new password challenge
+     * @param {object} user - User object from sign in
+     * @param {string} newPassword - New password to set
+     */
+    async completeNewPasswordChallenge(user, newPassword) {
+        try {
+            const signInUser = await Auth.completeNewPassword(user, newPassword);
+
+            const tokens = await this.getUserTokens(signInUser);
+
+            if (tokens) {
+                this.tokens = tokens;
+                this.isAuthenticated = true;
+                this.user = this.extractUserFromToken(tokens.idToken);
+                this.storeTokens(tokens);
+                document.dispatchEvent(new Event('authStateChanged'));
+
+                return {
+                    success: true,
+                    message: 'Password updated and logged in!',
+                    user: this.user
+                };
+            }
+        } catch (error) {
+            console.error('Complete new password error:', error);
+            return {
+                success: false,
+                message: this.getErrorMessage(error)
+            };
+        }
+    }
+
+    /**
+     * Request forgot password
+     * @param {string} email - User email
+     */
+    async forgotPassword(email) {
+        try {
+            const result = await Auth.forgotPassword(email);
+
+            return {
+                success: true,
+                message: 'Check your email for password reset code.',
+                codeDeliveryDetails: result.codeDeliveryDetails
+            };
+        } catch (error) {
+            console.error('Forgot password error:', error);
+            return {
+                success: false,
+                message: this.getErrorMessage(error)
+            };
+        }
+    }
+
+    /**
+     * Confirm new password with reset code
+     * @param {string} email - User email
+     * @param {string} code - Reset code from email
+     * @param {string} newPassword - New password
+     */
+    async confirmForgotPassword(email, code, newPassword) {
+        try {
+            await Auth.forgotPasswordSubmit(email, code, newPassword);
+
+            return {
+                success: true,
+                message: 'Password reset successful! You can now log in.'
+            };
+        } catch (error) {
+            console.error('Confirm forgot password error:', error);
+            return {
+                success: false,
+                message: this.getErrorMessage(error)
+            };
+        }
+    }
+
+    /**
+     * Get user tokens from authenticated user
+     */
+    async getUserTokens(user) {
+        try {
+            const session = user.getSignInUserSession();
+            if (session && session.isValid()) {
+                return {
+                    accessToken: session.getAccessToken().getJwtToken(),
+                    idToken: session.getIdToken().getJwtToken(),
+                    refreshToken: session.getRefreshToken().getToken(),
+                    expiresIn: session.getAccessToken().getExpiration(),
+                    timestamp: Date.now()
+                };
+            }
+        } catch (error) {
+            console.error('Error getting user tokens:', error);
+        }
+        return null;
+    }
+
+    /**
      * Initiate Google OAuth login
      * Redirects user to Cognito Hosted UI with Google as provider
      */
@@ -170,22 +356,20 @@ class AuthManager {
      */
     async logout() {
         try {
+            await Auth.signOut();
             this.clearStoredTokens();
             this.isAuthenticated = false;
             this.user = null;
             this.tokens = null;
 
-            // Redirect to Cognito logout endpoint
-            const cognitoDomain = awsConfig.oauth.domain;
-            const clientId = awsConfig.userPoolWebClientId;
-            const logoutUri = encodeURIComponent(awsConfig.oauth.redirectSignOut);
-
-            const logoutUrl = `https://${cognitoDomain}/logout?` +
-                `client_id=${clientId}&` +
-                `logout_uri=${logoutUri}`;
-
             document.dispatchEvent(new Event('authStateChanged'));
-            window.location.href = logoutUrl;
+
+            // Optionally redirect to Cognito logout for full session cleanup
+            // const cognitoDomain = awsConfig.oauth.domain;
+            // const clientId = awsConfig.userPoolWebClientId;
+            // const logoutUri = encodeURIComponent(awsConfig.oauth.redirectSignOut);
+            // const logoutUrl = `https://${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${logoutUri}`;
+            // window.location.href = logoutUrl;
         } catch (error) {
             console.error('Error logging out:', error);
             // Even if logout fails, clear local data
@@ -213,9 +397,10 @@ class AuthManager {
 
             return {
                 email: payload.email,
-                name: payload.name || payload.email,
+                name: payload.name || payload.email_verified === true ? payload.email : 'User',
                 picture: payload.picture,
-                sub: payload.sub  // Subject (unique user ID)
+                sub: payload.sub,  // Subject (unique user ID)
+                emailVerified: payload.email_verified
             };
         } catch (error) {
             console.error('Error extracting user from token:', error);
@@ -225,7 +410,6 @@ class AuthManager {
 
     /**
      * Check if tokens are still valid
-     * Considers token expiration time
      */
     areTokensValid(tokens) {
         if (!tokens || !tokens.expiresIn || !tokens.timestamp) {
@@ -241,7 +425,6 @@ class AuthManager {
 
     /**
      * Store tokens in localStorage
-     * Note: In production, consider using more secure storage
      */
     storeTokens(tokens) {
         try {
@@ -277,7 +460,6 @@ class AuthManager {
 
     /**
      * Get authorization header with current token
-     * Used for API requests
      */
     getAuthHeader() {
         if (!this.tokens || !this.tokens.accessToken) {
@@ -287,6 +469,29 @@ class AuthManager {
         return {
             'Authorization': `Bearer ${this.tokens.accessToken}`
         };
+    }
+
+    /**
+     * Get error message from Cognito error
+     */
+    getErrorMessage(error) {
+        const errorMessages = {
+            'UsernameExistsException': 'Email already registered. Please sign in or use a different email.',
+            'InvalidPasswordException': 'Password must be at least 8 characters with uppercase, lowercase, numbers, and special characters.',
+            'UserNotConfirmedException': 'Please verify your email before signing in.',
+            'NotAuthorizedException': 'Invalid email or password.',
+            'UserNotFoundException': 'User not found. Please sign up first.',
+            'CodeMismatchException': 'Invalid verification code.',
+            'ExpiredCodeException': 'Verification code has expired. Please request a new one.',
+            'LimitExceededException': 'Too many attempts. Please try again later.',
+            'PasswordResetRequiredException': 'Password reset is required.'
+        };
+
+        if (error.code && errorMessages[error.code]) {
+            return errorMessages[error.code];
+        }
+
+        return error.message || 'An error occurred. Please try again.';
     }
 
     /**
@@ -300,7 +505,6 @@ class AuthManager {
             errorMessage.textContent = message;
             errorSection.style.display = 'block';
 
-            // Hide other sections
             const welcomeSection = document.getElementById('welcome-section');
             const protectedSection = document.getElementById('protected-section');
 

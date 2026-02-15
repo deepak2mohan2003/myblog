@@ -23,8 +23,8 @@ const awsConfig = {
     // OAuth Configuration
     oauth: {
         // Cognito Domain - Get from AWS Cognito Console > App Integration > Domain
-        // Format: https://domain-name.auth.region.amazoncognito.com
-        domain: 'https://us-east-1gntklypwk.auth.us-east-1.amazoncognito.com',
+        // Format: domain-name.auth.region.amazoncognito.com (without https://)
+        domain: 'us-east-1gntklypwk.auth.us-east-1.amazoncognito.com',
 
         // OAuth Scopes - Define what user information to request
         scope: ['email', 'profile', 'openid'],
@@ -32,10 +32,10 @@ const awsConfig = {
         // Redirect URI after successful login - Update with your Amplify URL
         // Local development: http://localhost:8080/
         // Amplify hosted: https://yourdomain.amplifyapp.com/
-        redirectSignIn: 'https://main.dpn06cc44gobi.amplifyapp.com',
+        redirectSignIn: 'https://main.dpn06cc44gobi.amplifyapp.com/',
 
         // Redirect URI after logout - Same as redirectSignIn typically
-        redirectSignOut: 'https://main.dpn06cc44gobi.amplifyapp.com',
+        redirectSignOut: 'https://main.dpn06cc44gobi.amplifyapp.com/',
 
         // OAuth Response Type - Use 'code' for Authorization Code Grant
         responseType: 'code',

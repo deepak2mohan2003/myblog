@@ -6,26 +6,14 @@ version: 1
 # Frontend build settings
 frontend:
   phases:
-    # Install phase - Install dependencies if needed
-    install:
-      commands:
-        # For a static HTML/CSS/JS app, typically no install phase needed
-        # Uncomment below if you need to install any build tools
-        # - npm install
-
     # Pre-build phase - Prepare artifacts
     preBuild:
       commands:
-        # Pre-build commands go here (optional)
-        # Example: Copy configuration files, validate structure, etc.
         - echo "Validating project structure..."
 
     # Build phase - Compile/prepare application
     build:
       commands:
-        # For static files, no build step required
-        # If using build tools (webpack, gulp, etc.), add commands here
-        # Example: npm run build
         - echo "Building MyBlog application..."
         - echo "Static files are ready for deployment"
 
@@ -39,18 +27,8 @@ frontend:
     # Base directory for build artifacts
     baseDirectory: /
     files:
-      # Include all files
       - '**/*'
-    discard-paths: no
-    secondary-artifacts:
-      # Optional: Configure caching or additional artifact handling
-      {}
-
-  # Cache configuration
-  cache:
-    paths:
-      # Optional: Cache node_modules if using npm
-      # - 'node_modules/**/*'
+    discard-paths: false
 
 # Environmental variables
 env:

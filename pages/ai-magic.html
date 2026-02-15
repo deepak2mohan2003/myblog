@@ -92,51 +92,7 @@
     <script src="../js/config.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/app.js"></script>
-
-    <!-- Page-specific script -->
-    <script>
-        // Handle page-specific authentication
-        function setupPageAuth() {
-            const protectedSection = document.getElementById('protected-section');
-            const loginRequired = document.getElementById('login-required');
-            const loginBtn = document.getElementById('login-btn');
-
-            function updatePageState() {
-                if (window.app && window.app.isUserAuthenticated()) {
-                    protectedSection.style.display = 'block';
-                    loginRequired.style.display = 'none';
-                } else {
-                    protectedSection.style.display = 'none';
-                    loginRequired.style.display = 'block';
-                }
-            }
-
-            // Initial state
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', updatePageState);
-            } else {
-                updatePageState();
-            }
-
-            // Update on auth state change
-            document.addEventListener('authStateChanged', updatePageState);
-
-            // Login button handler
-            if (loginBtn) {
-                loginBtn.addEventListener('click', () => {
-                    window.authManager.loginWithGoogle();
-                });
-            }
-        }
-
-        // Wait for app to initialize before setting up page auth
-        const checkApp = setInterval(() => {
-            if (window.app) {
-                clearInterval(checkApp);
-                setupPageAuth();
-            }
-        }, 100);
-    </script>
+    <script src="../js/page-auth.js"></script>
 
     <style>
         .section-subtitle {
