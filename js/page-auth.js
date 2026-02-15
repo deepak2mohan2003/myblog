@@ -6,7 +6,7 @@
 
 function setupPageAuthentication() {
     // Check if app is initialized
-    if (!window.app || !window.authManager) {
+    if (!window.app || !window['authManager']) {
         console.warn('App not initialized yet. Retrying...');
         setTimeout(setupPageAuthentication, 100);
         return;
@@ -41,7 +41,7 @@ function setupPageAuthentication() {
 
     // Also update when modal opens/closes
     const originalShowAuthModal = window.app?.showAuthModal;
-    if (originalShowAuthModal) {
+    if (originalShowAuthModal && window.app) {
         window.app.showAuthModal = function() {
             originalShowAuthModal.call(this);
             updatePageAuthState();

@@ -1,12 +1,14 @@
 /**
- * Authentication Module
+ * Authentication Module - AWS Cognito with Amplify
  *
  * Handles:
- * - Email/Password authentication with Cognito
- * - Google OAuth login integration
+ * - Email/Password authentication through AWS Cognito
+ * - Google OAuth login through Cognito federation
  * - Token storage and retrieval
  * - Session management
- * - User registration and password reset
+ * - User registration and password reset via Cognito
+ *
+ * All auth operations go through AWS Cognito User Pool
  */
 
 class AuthManager {
@@ -19,7 +21,7 @@ class AuthManager {
 
     /**
      * Initialize authentication on page load
-     * Check if user has valid tokens from previous session
+     * Check if user has existing Cognito session
      */
     async initializeAuth() {
         try {
@@ -30,19 +32,18 @@ class AuthManager {
                 return;
             }
 
-            // Check for existing session/tokens
-            const storedTokens = this.getStoredTokens();
-            if (storedTokens) {
-                // Verify tokens are still valid
-                if (this.areTokensValid(storedTokens)) {
-                    this.tokens = storedTokens;
+            // Try to get current authenticated user from Cognito
+            try {
+                const user = await Auth.currentAuthenticatedUser();
+                if (user) {
                     this.isAuthenticated = true;
-                    this.user = this.extractUserFromToken(storedTokens.idToken);
+                    this.user = this.extractUserInfo(user);
+                    await this.getAndStoreTokens(user);
                     document.dispatchEvent(new Event('authStateChanged'));
-                } else {
-                    // Tokens expired, clear them
-                    this.clearStoredTokens();
                 }
+            } catch (err) {
+                // User not authenticated, which is normal for first-time visitors
+                console.log('No active session found');
             }
         } catch (error) {
             console.error('Error initializing authentication:', error);
@@ -51,31 +52,21 @@ class AuthManager {
 
     /**
      * Handle OAuth redirect callback from Cognito
-     * Exchange authorization code for tokens
      */
     async handleOAuthCallback() {
         try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
+            // Get current authenticated user after OAuth redirect
+            const user = await Auth.currentAuthenticatedUser();
+            if (user) {
+                this.isAuthenticated = true;
+                this.user = this.extractUserInfo(user);
+                await this.getAndStoreTokens(user);
 
-            if (code) {
-                // Exchange code for tokens
-                const tokens = await this.exchangeCodeForTokens(code);
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
 
-                if (tokens) {
-                    this.tokens = tokens;
-                    this.isAuthenticated = true;
-                    this.user = this.extractUserFromToken(tokens.idToken);
-
-                    // Store tokens
-                    this.storeTokens(tokens);
-
-                    // Clean up URL
-                    window.history.replaceState({}, document.title, window.location.pathname);
-
-                    // Dispatch auth event
-                    document.dispatchEvent(new Event('authStateChanged'));
-                }
+                // Dispatch auth event
+                document.dispatchEvent(new Event('authStateChanged'));
             }
         } catch (error) {
             console.error('Error handling OAuth callback:', error);
@@ -84,63 +75,21 @@ class AuthManager {
     }
 
     /**
-     * Exchange authorization code for tokens
-     */
-    async exchangeCodeForTokens(code) {
-        try {
-            const tokenEndpoint = `https://${awsConfig.oauth.domain}/oauth2/token`;
-
-            const body = new URLSearchParams({
-                grant_type: 'authorization_code',
-                client_id: awsConfig.userPoolWebClientId,
-                code: code,
-                redirect_uri: awsConfig.oauth.redirectSignIn
-            });
-
-            const response = await fetch(tokenEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: body.toString()
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to exchange code for tokens');
-            }
-
-            const data = await response.json();
-            return {
-                accessToken: data.access_token,
-                idToken: data.id_token,
-                refreshToken: data.refresh_token,
-                expiresIn: data.expires_in,
-                timestamp: Date.now()
-            };
-        } catch (error) {
-            console.error('Error getting tokens from code:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Sign up with email and password
+     * Sign up with email and password through Cognito
      * @param {string} email - User email
      * @param {string} password - User password
      * @param {string} name - User full name
      */
     async signUpWithEmail(email, password, name = '') {
         try {
-            const signUpParams = {
+            const result = await Auth.signUp({
                 username: email,
                 password: password,
                 attributes: {
                     email: email,
                     name: name || email.split('@')[0]
                 }
-            };
-
-            const result = await Auth.signUp(signUpParams);
+            });
 
             return {
                 success: true,
@@ -157,7 +106,7 @@ class AuthManager {
     }
 
     /**
-     * Confirm user account with verification code
+     * Confirm user email with verification code
      * @param {string} email - User email
      * @param {string} code - Verification code from email
      */
@@ -179,18 +128,16 @@ class AuthManager {
     }
 
     /**
-     * Sign in with email and password
+     * Sign in with email and password through Cognito
      * @param {string} email - User email
      * @param {string} password - User password
      */
     async signInWithEmail(email, password) {
         try {
-            const signInParams = {
+            const user = await Auth.signIn({
                 username: email,
                 password: password
-            };
-
-            const user = await Auth.signIn(signInParams);
+            });
 
             if (user.challengeName === 'NEW_PASSWORD_REQUIRED') {
                 return {
@@ -201,22 +148,20 @@ class AuthManager {
                 };
             }
 
-            // Get tokens
-            const tokens = await this.getUserTokens(user);
+            // Get user attributes and tokens
+            const userAttributes = await Auth.userAttributes(user);
+            this.user = this.extractUserAttributes(userAttributes);
+            this.isAuthenticated = true;
 
-            if (tokens) {
-                this.tokens = tokens;
-                this.isAuthenticated = true;
-                this.user = this.extractUserFromToken(tokens.idToken);
-                this.storeTokens(tokens);
-                document.dispatchEvent(new Event('authStateChanged'));
+            await this.getAndStoreTokens(user);
 
-                return {
-                    success: true,
-                    message: 'Login successful!',
-                    user: this.user
-                };
-            }
+            document.dispatchEvent(new Event('authStateChanged'));
+
+            return {
+                success: true,
+                message: 'Login successful!',
+                user: this.user
+            };
         } catch (error) {
             console.error('Sign in error:', error);
             return {
@@ -233,23 +178,21 @@ class AuthManager {
      */
     async completeNewPasswordChallenge(user, newPassword) {
         try {
-            const signInUser = await Auth.completeNewPassword(user, newPassword);
+            const signedInUser = await Auth.completeNewPassword(user, newPassword);
 
-            const tokens = await this.getUserTokens(signInUser);
+            const userAttributes = await Auth.userAttributes(signedInUser);
+            this.user = this.extractUserAttributes(userAttributes);
+            this.isAuthenticated = true;
 
-            if (tokens) {
-                this.tokens = tokens;
-                this.isAuthenticated = true;
-                this.user = this.extractUserFromToken(tokens.idToken);
-                this.storeTokens(tokens);
-                document.dispatchEvent(new Event('authStateChanged'));
+            await this.getAndStoreTokens(signedInUser);
 
-                return {
-                    success: true,
-                    message: 'Password updated and logged in!',
-                    user: this.user
-                };
-            }
+            document.dispatchEvent(new Event('authStateChanged'));
+
+            return {
+                success: true,
+                message: 'Password updated and logged in!',
+                user: this.user
+            };
         } catch (error) {
             console.error('Complete new password error:', error);
             return {
@@ -260,7 +203,7 @@ class AuthManager {
     }
 
     /**
-     * Request forgot password
+     * Request password reset via Cognito
      * @param {string} email - User email
      */
     async forgotPassword(email) {
@@ -282,7 +225,7 @@ class AuthManager {
     }
 
     /**
-     * Confirm new password with reset code
+     * Confirm password reset with code
      * @param {string} email - User email
      * @param {string} code - Reset code from email
      * @param {string} newPassword - New password
@@ -305,71 +248,100 @@ class AuthManager {
     }
 
     /**
-     * Get user tokens from authenticated user
+     * Get and store tokens from authenticated user
      */
-    async getUserTokens(user) {
+    async getAndStoreTokens(user) {
         try {
-            const session = user.getSignInUserSession();
-            if (session && session.isValid()) {
-                return {
+            const session = user.getSignInUserSession?.() ||
+                            await Auth.currentSession();
+
+            if (session && session.isValid?.()) {
+                this.tokens = {
                     accessToken: session.getAccessToken().getJwtToken(),
                     idToken: session.getIdToken().getJwtToken(),
                     refreshToken: session.getRefreshToken().getToken(),
                     expiresIn: session.getAccessToken().getExpiration(),
                     timestamp: Date.now()
                 };
+                this.storeTokens(this.tokens);
+                return this.tokens;
             }
         } catch (error) {
-            console.error('Error getting user tokens:', error);
+            console.error('Error getting tokens:', error);
         }
         return null;
     }
 
     /**
-     * Initiate Google OAuth login
-     * Redirects user to Cognito Hosted UI with Google as provider
+     * Extract user information from Cognito user object
      */
-    loginWithGoogle() {
+    extractUserInfo(user) {
         try {
-            const cognitoDomain = awsConfig.oauth.domain;
-            const clientId = awsConfig.userPoolWebClientId;
-            const redirectUri = encodeURIComponent(awsConfig.oauth.redirectSignIn);
-            const scope = encodeURIComponent(awsConfig.oauth.scope.join(' '));
-
-            const loginUrl = `https://${cognitoDomain}/oauth2/authorize?` +
-                `client_id=${clientId}&` +
-                `response_type=code&` +
-                `scope=${scope}&` +
-                `redirect_uri=${redirectUri}&` +
-                `identity_provider=Google`;
-
-            // Redirect to Cognito login
-            window.location.href = loginUrl;
+            const attributes = user.attributes || {};
+            return {
+                email: attributes.email || user.username,
+                name: attributes.name || attributes.email || 'User',
+                picture: attributes.picture,
+                sub: attributes.sub || user.username,
+                emailVerified: attributes.email_verified
+            };
         } catch (error) {
-            console.error('Error initiating Google login:', error);
-            this.showError('Failed to initiate login. Please check your configuration.');
+            console.error('Error extracting user info:', error);
+            return null;
         }
     }
 
     /**
-     * Logout user and clear tokens
+     * Extract user info from Cognito attributes array
+     */
+    extractUserAttributes(attributes) {
+        try {
+            const attrMap = {};
+            if (Array.isArray(attributes)) {
+                attributes.forEach(attr => {
+                    attrMap[attr.Name] = attr.Value;
+                });
+            } else {
+                Object.assign(attrMap, attributes);
+            }
+
+            return {
+                email: attrMap.email,
+                name: attrMap.name || attrMap.email || 'User',
+                picture: attrMap.picture,
+                sub: attrMap.sub,
+                emailVerified: attrMap.email_verified === 'true'
+            };
+        } catch (error) {
+            console.error('Error extracting user attributes:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Initiate Google OAuth login via Cognito Hosted UI
+     */
+    loginWithGoogle() {
+        try {
+            Auth.federatedSignIn({ provider: 'Google' });
+        } catch (error) {
+            console.error('Error initiating Google login:', error);
+            this.showError('Failed to initiate Google login. Please check your configuration.');
+        }
+    }
+
+    /**
+     * Logout user from Cognito
      */
     async logout() {
         try {
-            await Auth.signOut();
+            await Auth.signOut({ global: true });
             this.clearStoredTokens();
             this.isAuthenticated = false;
             this.user = null;
             this.tokens = null;
 
             document.dispatchEvent(new Event('authStateChanged'));
-
-            // Optionally redirect to Cognito logout for full session cleanup
-            // const cognitoDomain = awsConfig.oauth.domain;
-            // const clientId = awsConfig.userPoolWebClientId;
-            // const logoutUri = encodeURIComponent(awsConfig.oauth.redirectSignOut);
-            // const logoutUrl = `https://${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${logoutUri}`;
-            // window.location.href = logoutUrl;
         } catch (error) {
             console.error('Error logging out:', error);
             // Even if logout fails, clear local data
@@ -378,49 +350,6 @@ class AuthManager {
             this.user = null;
             document.dispatchEvent(new Event('authStateChanged'));
         }
-    }
-
-    /**
-     * Extract user information from ID token
-     * Decodes JWT without verification (verification happens server-side)
-     */
-    extractUserFromToken(idToken) {
-        try {
-            const parts = idToken.split('.');
-            if (parts.length !== 3) {
-                throw new Error('Invalid token format');
-            }
-
-            // Decode payload (second part of JWT)
-            const decodedPayload = atob(parts[1]);
-            const payload = JSON.parse(decodedPayload);
-
-            return {
-                email: payload.email,
-                name: payload.name || payload.email_verified === true ? payload.email : 'User',
-                picture: payload.picture,
-                sub: payload.sub,  // Subject (unique user ID)
-                emailVerified: payload.email_verified
-            };
-        } catch (error) {
-            console.error('Error extracting user from token:', error);
-            return null;
-        }
-    }
-
-    /**
-     * Check if tokens are still valid
-     */
-    areTokensValid(tokens) {
-        if (!tokens || !tokens.expiresIn || !tokens.timestamp) {
-            return false;
-        }
-
-        const expirationTime = tokens.timestamp + (tokens.expiresIn * 1000);
-        const currentTime = Date.now();
-        const bufferTime = 5 * 60 * 1000; // 5 minute buffer
-
-        return currentTime < (expirationTime - bufferTime);
     }
 
     /**
@@ -472,7 +401,7 @@ class AuthManager {
     }
 
     /**
-     * Get error message from Cognito error
+     * Get user-friendly error message from Cognito errors
      */
     getErrorMessage(error) {
         const errorMessages = {
@@ -484,14 +413,22 @@ class AuthManager {
             'CodeMismatchException': 'Invalid verification code.',
             'ExpiredCodeException': 'Verification code has expired. Please request a new one.',
             'LimitExceededException': 'Too many attempts. Please try again later.',
-            'PasswordResetRequiredException': 'Password reset is required.'
+            'PasswordResetRequiredException': 'Password reset is required.',
+            'InvalidParameterException': 'Invalid parameter provided.',
+            'UsernameAttributeNotConfigured': 'Email is required for sign up.',
+            'AliasAttributeNotConfigured': 'Email login is not configured.'
         };
 
-        if (error.code && errorMessages[error.code]) {
-            return errorMessages[error.code];
+        const code = error.code || error.name;
+        if (code && errorMessages[code]) {
+            return errorMessages[code];
         }
 
-        return error.message || 'An error occurred. Please try again.';
+        if (error.message) {
+            return error.message;
+        }
+
+        return 'An error occurred. Please try again.';
     }
 
     /**
@@ -525,5 +462,10 @@ class AuthManager {
     }
 }
 
-// Initialize global auth manager
-const authManager = new AuthManager();
+// Initialize global auth manager when Amplify is ready
+if (typeof Amplify !== 'undefined') {
+    const authManager = new AuthManager();
+    window.authManager = authManager;
+} else {
+    console.error('AWS Amplify not loaded. Make sure aws-amplify is included before auth.js');
+}

@@ -47,19 +47,35 @@ const awsConfig = {
 
 /**
  * Amplify Configuration
- * Initialize AWS Amplify with Cognito settings
+ * Initialize AWS Amplify with Cognito User Pool settings
+ * This configuration enables:
+ * - Email/Password authentication through Cognito
+ * - Google OAuth federation through Cognito
+ * - Email verification and password reset
  */
 Amplify.configure({
     Auth: {
         region: awsConfig.region,
         userPoolId: awsConfig.userPoolId,
         userPoolWebClientId: awsConfig.userPoolWebClientId,
+        identityPoolId: undefined,
+
+        // OAuth configuration for Cognito Hosted UI
         oauth: {
             domain: awsConfig.oauth.domain,
             scope: awsConfig.oauth.scope,
             redirectSignIn: awsConfig.oauth.redirectSignIn,
             redirectSignOut: awsConfig.oauth.redirectSignOut,
             responseType: awsConfig.oauth.responseType
+        },
+
+        // Password policy configuration
+        passwordPolicy: {
+            minLength: 8,
+            requireLowercase: true,
+            requireUppercase: true,
+            requireNumbers: true,
+            requireSpecialCharacters: true
         }
     }
 });

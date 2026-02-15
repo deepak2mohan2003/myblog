@@ -33,14 +33,13 @@
                         <a href="pages/games.html" class="nav-link">Games</a>
                     </li>
                 </ul>
-                <button id="auth-btn" class="auth-button">Login</button>
             </div>
         </nav>
     </header>
 
     <main>
-        <!-- Welcome Section (Not Authenticated) -->
-        <section id="welcome-section" class="welcome-section">
+        <!-- Welcome Section -->
+        <section class="welcome-section">
             <div class="welcome-container">
                 <h1>Welcome to MyBlog</h1>
                 <p>A personal space for daily tasks, AI-powered tools, learning, and fun games.</p>
@@ -62,143 +61,12 @@
                         <p>Play interactive games and challenges.</p>
                     </div>
                 </div>
-                <button id="login-btn" class="btn-primary">Login with Google</button>
-            </div>
-        </section>
-
-        <!-- Protected Section (Authenticated Users Only) -->
-        <section id="protected-section" class="protected-section" style="display: none;">
-            <div class="protected-container">
-                <h2>Welcome, <span id="user-name">User</span>!</h2>
-                <div class="user-info">
-                    <p>Email: <span id="user-email">-</span></p>
-                    <p id="user-status" class="status-badge">Authenticated ✓</p>
-                </div>
-                <div class="protected-content">
-                    <h3>Your Dashboard</h3>
-                    <p>You now have access to all features. Click on any section in the navigation menu to get started!</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Authentication Error Section -->
-        <section id="error-section" class="error-section" style="display: none;">
-            <div class="error-container">
-                <h2>Authentication Error</h2>
-                <p id="error-message"></p>
-                <button id="retry-btn" class="btn-primary">Retry Login</button>
             </div>
         </section>
     </main>
 
-    <!-- Authentication Modal -->
-    <div id="auth-modal" class="auth-modal" style="display: none;">
-        <div class="auth-modal-content">
-            <button class="auth-modal-close" onclick="window.app?.closeAuthModal()">&times;</button>
-
-            <!-- Sign In Form -->
-            <form id="signin-form" class="auth-form" style="display: block;">
-                <h2>Sign In</h2>
-                <div class="form-group">
-                    <label for="signin-email">Email</label>
-                    <input type="email" id="signin-email" required placeholder="your@email.com">
-                </div>
-                <div class="form-group">
-                    <label for="signin-password">Password</label>
-                    <input type="password" id="signin-password" required placeholder="Enter password">
-                </div>
-                <div id="signin-error" class="form-error"></div>
-                <button type="submit" class="btn-primary" style="width: 100%;">Sign In</button>
-                <p class="auth-toggle">Don't have an account? <a href="#" id="signup-link">Sign Up</a></p>
-                <p class="auth-toggle"><a href="#" id="forgot-password-link">Forgot Password?</a></p>
-
-                <div class="auth-divider">OR</div>
-
-                <button type="button" id="google-login-btn" class="btn-google">
-                    <span>Sign In with Google</span>
-                </button>
-            </form>
-
-            <!-- Sign Up Form -->
-            <form id="signup-form" class="auth-form" style="display: none;">
-                <h2>Create Account</h2>
-                <div class="form-group">
-                    <label for="signup-name">Full Name</label>
-                    <input type="text" id="signup-name" required placeholder="Your name">
-                </div>
-                <div class="form-group">
-                    <label for="signup-email">Email</label>
-                    <input type="email" id="signup-email" required placeholder="your@email.com">
-                </div>
-                <div class="form-group">
-                    <label for="signup-password">Password</label>
-                    <input type="password" id="signup-password" required placeholder="Min 8 chars with uppercase, lowercase, numbers, special chars">
-                </div>
-                <div class="form-group">
-                    <label for="signup-confirm-password">Confirm Password</label>
-                    <input type="password" id="signup-confirm-password" required placeholder="Confirm password">
-                </div>
-                <div id="signup-error" class="form-error"></div>
-                <button type="submit" class="btn-primary" style="width: 100%;">Create Account</button>
-                <p class="auth-toggle">Already have an account? <a href="#" id="signin-link">Sign In</a></p>
-            </form>
-
-            <!-- Verify Email Form -->
-            <form id="verify-form" class="auth-form" style="display: none;">
-                <h2>Verify Email</h2>
-                <p id="verify-message" class="form-message">Verification code sent to your email</p>
-                <div class="form-group">
-                    <label for="verify-code">Verification Code</label>
-                    <input type="text" id="verify-code" required placeholder="Enter 6-digit code from email">
-                </div>
-                <div id="verify-error" class="form-error"></div>
-                <button type="submit" class="btn-primary" style="width: 100%;">Verify Email</button>
-            </form>
-
-            <!-- Forgot Password Form -->
-            <form id="forgot-password-form" class="auth-form" style="display: none;">
-                <h2>Reset Password</h2>
-                <div class="form-group">
-                    <label for="forgot-email">Email</label>
-                    <input type="email" id="forgot-email" required placeholder="your@email.com">
-                </div>
-                <div id="forgot-error" class="form-error"></div>
-                <button type="submit" class="btn-primary" style="width: 100%;">Send Reset Code</button>
-                <p class="auth-toggle"><a href="#" id="back-to-signin">Back to Sign In</a></p>
-            </form>
-
-            <!-- Reset Password Form -->
-            <form id="reset-password-form" class="auth-form" style="display: none;">
-                <h2>Create New Password</h2>
-                <p id="reset-message" class="form-message">Reset code sent to your email</p>
-                <div class="form-group">
-                    <label for="reset-code">Reset Code</label>
-                    <input type="text" id="reset-code" placeholder="Enter code from email (if resetting password)">
-                </div>
-                <div class="form-group">
-                    <label for="new-password">New Password</label>
-                    <input type="password" id="new-password" required placeholder="Min 8 chars with uppercase, lowercase, numbers, special chars">
-                </div>
-                <div class="form-group">
-                    <label for="confirm-new-password">Confirm Password</label>
-                    <input type="password" id="confirm-new-password" required placeholder="Confirm password">
-                </div>
-                <div id="reset-error" class="form-error"></div>
-                <button type="submit" class="btn-primary" style="width: 100%;">Reset Password</button>
-            </form>
-        </div>
-    </div>
-
     <footer>
         <p>&copy; 2026 MyBlog. All rights reserved.</p>
     </footer>
-
-    <!-- AWS Cognito SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/aws-amplify@5.3.11/dist/aws-amplify.min.js"></script>
-
-    <!-- Application Scripts -->
-    <script src="js/config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/app.js"></script>
 </body>
 </html>
