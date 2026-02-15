@@ -24,7 +24,7 @@ const awsConfig = {
     oauth: {
         // Cognito Domain - Get from AWS Cognito Console > App Integration > Domain
         // Format: https://domain-name.auth.region.amazoncognito.com
-        domain: 'myblog-auth.auth.us-east-1.amazoncognito.com',
+        domain: 'https://us-east-1gntklypwk.auth.us-east-1.amazoncognito.com',
 
         // OAuth Scopes - Define what user information to request
         scope: ['email', 'profile', 'openid'],
