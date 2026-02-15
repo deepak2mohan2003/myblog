@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Task Tracker - MyBlog</title>
     <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="./daily-task.css">
 </head>
 <body>
     <header>
@@ -43,27 +44,97 @@
                 <h1>📝 Daily Task Tracker</h1>
                 <p class="section-subtitle">Manage and track your daily activities and goals</p>
 
-                <div class="page-content">
-                    <h2>Task Tracker</h2>
-                    <p>Coming soon! This section will allow you to:</p>
-                    <ul>
-                        <li>Create new daily tasks</li>
-                        <li>Mark tasks as complete</li>
-                        <li>Track your productivity</li>
-                        <li>View task history</li>
-                        <li>Set reminders for important tasks</li>
-                    </ul>
+                <!-- Create Task Form -->
+                <div class="task-form-container">
+                    <h2>Create New Task</h2>
+                    <form id="task-form" class="task-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="task-name">Task Name *</label>
+                                <input type="text" id="task-name" name="taskName" required placeholder="Enter task name">
+                            </div>
 
-                    <div class="feature-preview">
-                        <h3>Planned Features:</h3>
-                        <ul>
-                            <li>✓ Task creation and management</li>
-                            <li>✓ Progress tracking with visual indicators</li>
-                            <li>✓ Category-based task organization</li>
-                            <li>✓ Due date management</li>
-                            <li>✓ Task prioritization</li>
-                            <li>✓ Daily statistics and insights</li>
-                        </ul>
+                            <div class="form-group">
+                                <label for="task-category">Category *</label>
+                                <select id="task-category" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Chores">Chores</option>
+                                    <option value="Exercise">Exercise</option>
+                                    <option value="Study">Study</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="task-period">Time Period *</label>
+                                <select id="task-period" name="period" required>
+                                    <option value="">Select Period</option>
+                                    <option value="day">Day</option>
+                                    <option value="week">Week</option>
+                                    <option value="month">Month</option>
+                                    <option value="custom">Custom Date Range</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="task-start-date">Start Date *</label>
+                                <input type="date" id="task-start-date" name="startDate" required>
+                            </div>
+                        </div>
+
+                        <!-- Custom Date Range Fields (Hidden by default) -->
+                        <div id="custom-date-fields" class="form-row" style="display: none;">
+                            <div class="form-group">
+                                <label for="task-end-date">End Date *</label>
+                                <input type="date" id="task-end-date" name="endDate">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <button type="submit" class="btn-primary">Create Task</button>
+                            <button type="reset" class="btn-secondary">Clear</button>
+                        </div>
+
+                        <div id="form-error" class="form-error"></div>
+                    </form>
+                </div>
+
+                <!-- Task List Section -->
+                <div class="task-list-container">
+                    <div class="task-list-header">
+                        <h2>Tasks for Today</h2>
+                        <div class="date-navigation">
+                            <button id="prev-date" class="btn-nav">&larr;</button>
+                            <span id="current-date" class="current-date-display"></span>
+                            <button id="next-date" class="btn-nav">&rarr;</button>
+                        </div>
+                    </div>
+
+                    <div id="task-list" class="task-list">
+                        <div class="empty-state">
+                            <p>No tasks for today. Create a new task to get started!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Statistics -->
+                <div class="task-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total">0</div>
+                        <div class="stat-label">Total Tasks</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value stat-assigned" id="stat-assigned">0</div>
+                        <div class="stat-label">Assigned</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value stat-inprogress" id="stat-inprogress">0</div>
+                        <div class="stat-label">In-Progress</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value stat-completed" id="stat-completed">0</div>
+                        <div class="stat-label">Completed</div>
                     </div>
                 </div>
             </div>
@@ -74,92 +145,6 @@
         <p>&copy; 2026 MyBlog. All rights reserved.</p>
     </footer>
 
-    <style>
-        .page-section {
-            animation: fadeIn 0.5s ease;
-        }
-
-        .page-container {
-            background: var(--bg-white);
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: var(--shadow);
-        }
-
-        .page-container h1 {
-            font-size: 2.2rem;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-        }
-
-        .section-subtitle {
-            font-size: 1.1rem;
-            color: var(--text-light);
-            margin-bottom: 2rem;
-        }
-
-        .page-content {
-            background: var(--bg-light);
-            padding: 2rem;
-            border-radius: 10px;
-            margin: 2rem 0;
-        }
-
-        .page-content h2 {
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-        }
-
-        .page-content ul {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .page-content li {
-            padding: 0.5rem 0;
-            padding-left: 1.5rem;
-            position: relative;
-        }
-
-        .page-content li:before {
-            content: "→";
-            position: absolute;
-            left: 0;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        .feature-preview {
-            background: var(--bg-white);
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-top: 1.5rem;
-            border-left: 4px solid var(--accent-color);
-        }
-
-        .feature-preview h3 {
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-        }
-
-        .feature-preview ul {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .feature-preview li {
-            padding: 0.5rem 0;
-            padding-left: 1.5rem;
-            position: relative;
-        }
-
-        .feature-preview li:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: var(--success-color);
-            font-weight: bold;
-        }
-    </style>
+    <script src="./task-tracker.js"></script>
 </body>
 </html>
