@@ -17,8 +17,8 @@ const awsConfig = {
 
     // Cognito User Pool Configuration
     // Get these values from AWS Cognito Console > User Pool > General Settings
-    userPoolId: 'us-east-1_XXXXXXXXX',  // Format: region_alphanumeric (e.g., us-east-1_xyz1234567)
-    userPoolWebClientId: 'xxxxxxxxxxxxxxxxxxxxxxxxxx',  // App Client ID from Cognito Console
+    userPoolId: 'us-east-1_gnTklyPwk',  // Format: region_alphanumeric (e.g., us-east-1_xyz1234567)
+    userPoolWebClientId: '230jtdv52dhl7hvd76d4ne5g2l',  // App Client ID from Cognito Console
 
     // OAuth Configuration
     oauth: {
@@ -32,10 +32,10 @@ const awsConfig = {
         // Redirect URI after successful login - Update with your Amplify URL
         // Local development: http://localhost:8080/
         // Amplify hosted: https://yourdomain.amplifyapp.com/
-        redirectSignIn: 'http://localhost:8080/',
+        redirectSignIn: 'https://main.dpn06cc44gobi.amplifyapp.com',
 
         // Redirect URI after logout - Same as redirectSignIn typically
-        redirectSignOut: 'http://localhost:8080/',
+        redirectSignOut: 'https://main.dpn06cc44gobi.amplifyapp.com',
 
         // OAuth Response Type - Use 'code' for Authorization Code Grant
         responseType: 'code',
