@@ -42,6 +42,12 @@ class TaskTracker {
         const nextBtn = document.getElementById('next-date');
         if (prevBtn) prevBtn.addEventListener('click', () => this.previousDate());
         if (nextBtn) nextBtn.addEventListener('click', () => this.nextDate());
+
+        // Submit tasks button
+        const submitBtn = document.getElementById('submit-tasks');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', () => this.handleSubmitTasks());
+        }
     }
 
     /**
@@ -356,6 +362,109 @@ class TaskTracker {
             msgEl.style.opacity = '0';
             setTimeout(() => msgEl.remove(), 300);
         }, 3000);
+    }
+
+    /**
+     * Submit tasks to AWS Lambda via API Gateway
+     */
+    async handleSubmitTasks() {
+        const currentDateStr = this.currentDate.toISOString().split('T')[0];
+        const tasksForDate = this.tasks.filter(task =>
+            task.dates.includes(currentDateStr)
+        );
+
+        if (tasksForDate.length === 0) {
+            alert('No tasks to submit for today.');
+            return;
+        }
+
+        const submitBtn = document.getElementById('submit-tasks');
+        const submitMessage = document.getElementById('submit-message');
+
+        // Disable button and show loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Submitting...';
+        submitMessage.textContent = '';
+
+        try {
+            const result = await this.submitTasksToDatabase(currentDateStr, tasksForDate);
+
+            if (result.success) {
+                submitMessage.textContent = '✅ Tasks submitted successfully!';
+                submitMessage.className = 'submit-message success';
+                this.showSuccessMessage('Tasks saved to database!');
+            } else {
+                throw new Error(result.message || 'Failed to submit tasks');
+            }
+        } catch (error) {
+            console.error('Error submitting tasks:', error);
+            submitMessage.textContent = '❌ Error: ' + error.message;
+            submitMessage.className = 'submit-message error';
+        } finally {
+            // Re-enable button
+            submitBtn.disabled = false;
+            submitBtn.textContent = '📤 Submit Tasks for Today';
+
+            // Clear message after 5 seconds
+            setTimeout(() => {
+                submitMessage.textContent = '';
+            }, 5000);
+        }
+    }
+
+    /**
+     * Submit tasks to AWS Lambda via API Gateway
+     */
+    async submitTasksToDatabase(date, tasks) {
+        // Get API endpoint from config or environment
+        const apiEndpoint = window.API_CONFIG?.endpoint || '';
+
+        if (!apiEndpoint) {
+            throw new Error('API endpoint not configured. Please check api-config.js');
+        }
+
+        // Prepare payload
+        const payload = {
+            date: date,
+            timestamp: new Date().toISOString(),
+            tasks: tasks.map(task => ({
+                id: task.id,
+                name: task.name,
+                category: task.category,
+                status: task.status,
+                period: task.period,
+                startDate: task.startDate,
+                endDate: task.endDate
+            }))
+        };
+
+        try {
+            const response = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            return {
+                success: true,
+                message: data.message || 'Tasks submitted successfully',
+                data: data
+            };
+        } catch (error) {
+            console.error('API Error:', error);
+            return {
+                success: false,
+                message: error.message || 'Failed to submit tasks to database'
+            };
+        }
     }
 }
 
