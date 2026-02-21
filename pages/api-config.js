@@ -9,7 +9,7 @@ window.API_CONFIG = {
     // Replace with your API Gateway endpoint URL
     // Format: https://xxxxxxxxxx.execute-api.region.amazonaws.com/stage/tasks
     // You'll get this URL when you create the API Gateway endpoint
-    endpoint: 'https://YOUR_API_GATEWAY_ENDPOINT_URL_HERE',
+    endpoint: 'https://luu3fwvukd.execute-api.us-east-1.amazonaws.com/PROD/tasks',
 
     // Optional: Add headers or other configurations
     headers: {
